@@ -30,3 +30,4 @@ var getPromiseConnection = async function(callback){
 
 module.exports={getConnection,getPromiseConnection};
 module.exports.secret="testsecret";
+module.exports.FILE_URL="https://lovely-poems-rescue.loca.lt/files/";

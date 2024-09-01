@@ -38,7 +38,7 @@ module.exports = {
                         return callback({ code: 500, error: err });
                     }
 
-                    connection.query("SELECT *,concat('" + config.PROFILE_URL + "',profile) as profile FROM users WHERE email='" + email + "' AND password='" + password + "'", function (err, results) {
+                    connection.query("SELECT *,concat('" + config.FILE_URL + "',profile) as profile FROM users WHERE email='" + email + "' AND password='" + password + "'", function (err, results) {
                         if (err) {
                             connection.release();
                             return callback({ code: 500, error: err });
@@ -76,7 +76,7 @@ module.exports = {
                 return callback({ code: 500, error: err });
             }
 
-            connection.query("SELECT *,concat('" + config.PROFILE_URL + "',profile) as profile FROM users WHERE email='" + email + "' AND password='" + password + "'", function (err, results) {
+            connection.query("SELECT *,concat('" + config.FILE_URL + "',profile) as profile FROM users WHERE email='" + email + "' AND password='" + password + "'", function (err, results) {
                 if (err) {
                     connection.release();
                     return callback({ code: 500, error: err });

@@ -1,7 +1,7 @@
 const request = require('request-promise');
 var path = require('path')
 
-const{getUserProfile,applyForExpert,votePost,commentOnPost,raiseAQuery,modifyQuery,requestConsulation,reportUser,reportQuery,followUnfollowUser,getFollowerFollowing}=require('../services/user.service');
+const{getUserProfile,applyForExpert,votePost,commentOnPost,raiseAQuery,modifyQuery,requestConsulation,reportUser,reportQuery,followUnfollowUser,getFollowerFollowing,getMyQueries}=require('../services/user.service');
 
 module.exports={
     getUserProfile:(req,res)=>{
@@ -119,12 +119,13 @@ module.exports={
     raiseAQuery:(req,res)=>{
         req.body.user_id=req.userId;
         if(req.file!=null){
-            req.body.file_path=file.filename;
+            req.body.file_path=req.file.filename;
         }else{
             req.body.file_path='';
         }
         raiseAQuery(req.body,function(error,result){
             if(error){
+                console.log(error);
                 if(error.code==500){
                     return res.json({
                         status:"FAILED",
@@ -152,7 +153,7 @@ module.exports={
     modifyQuery:(req,res)=>{
         req.body.user_id=req.userId;
         if(req.file!=null){
-            req.body.file_path=file.filename;
+            req.body.file_path=req.file.filename;
         }else{
             req.body.file_path='';
         }
@@ -302,6 +303,35 @@ module.exports={
     getFollowerFollowing:(req,res)=>{
         req.body.user_id=req.userId;
         getFollowerFollowing(req.body,function(error,result){
+            if(error){
+                console.log(error);
+                if(error.code==500){
+                    return res.json({
+                        status:"FAILED",
+                        code:error.code,
+                        message:"Database connection error",
+                    });
+                }else{
+                    return res.json({
+                        status:"FAILED",
+                        code:error.code,
+                        message:error.message,
+                    });
+                }
+            }else{
+                return res.json({
+                    status:"SUCCESS",
+                    code:result.code,
+                    message: result.message,
+                    data:result.data,
+                })
+            }
+        })
+    },
+
+    getMyQueries:(req,res)=>{
+        req.body.user_id=req.userId;
+        getMyQueries(req.body,function(error,result){
             if(error){
                 console.log(error);
                 if(error.code==500){

@@ -5,7 +5,7 @@ const fs = require('fs-extra');
 
 const fileStrogrageEngine=multer.diskStorage({
     destination:(req,file,cb)=>{
-        const dir="files/";
+        const dir="public/files/";
         fs.ensureDirSync(dir);
         cb(null,dir)
     },

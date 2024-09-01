@@ -67,6 +67,7 @@ module.exports={
         req.body.user_id=req.userId;
         getLegalExperts(req.body,function(error,result){
             if(error){
+                console.log(error);
                 if(error.code==500){
                     return res.json({
                         status:"FAILED",

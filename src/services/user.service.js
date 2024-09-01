@@ -14,6 +14,7 @@ var path = require('path')
 //9. Report query
 //10. Follow Unfollow user
 //11. Get follower & following
+//12. Get my queries
 
 
 module.exports = {
@@ -24,7 +25,7 @@ module.exports = {
                 return callback({ code: 500, error: err });
             }
 
-            var sql = "SELECT *,concat('" + config.PROFILE_URL + "',profile) as profile FROM users WHERE id=" + userId;
+            var sql = "SELECT *,(CASE WHEN profile IS NOT NULL AND profile!='' THEN concat('" + config.FILE_URL + "',profile) ELSE '' END) as profile FROM users WHERE id=" + userId;
 
             connection.query(sql, function (err, results) {
                 if (err) {
@@ -187,7 +188,7 @@ module.exports = {
                         'comment': result.comment
                     };
 
-                    sql = "SELECT *,concat('" + config.PROFILE_URL + "',profile) as profile FROM users WHERE id=" + responseData['user_id'];
+                    sql = "SELECT *,(CASE WHEN profile IS NOT NULL AND profile!='' THEN concat('" + config.FILE_URL + "',profile) ELSE '' END) as profile FROM users WHERE id=" + responseData['user_id'];
 
                     connection.query(sql, function (err, results) {
                         if (err) {
@@ -211,22 +212,27 @@ module.exports = {
     raiseAQuery: (data, callback) => {
         const userId = data.user_id;
         const queryContent = data.query_content;
-        const filepath = data.filepath;
+        var filepath = "";
 
-        var filetype ="";
+        if(data.file_path!==undefined){
+            filepath=data.file_path;
+        }
 
-        if(filepath!=null&&filepath!=""){
+        var filetype ="None";
+
+        if(filepath!=null&&filepath!=""&&filepath!==undefined){
             const ext=path.extname(filepath).replace('.','');
 
             if(ext=='pdf'){
-                filepath="Pdf"
+                filetype="Pdf"
             }else if(ext=='docx'){
-                filepath="Docx";
+                filetype="Docx";
             }else if(ext=='png'||ext=='jpg'||ext=='jpeg'){
-                filepath="Image";
+                filetype="Image";
             }
         }
 
+        console.log(filepath);
         db(function (err, connection) {
             if (err) {
                 return callback({ code: 500, error: err });
@@ -238,15 +244,6 @@ module.exports = {
                 if (err) {
                     connection.release();
                     return callback({ code: 500, error: err });
-                }
-
-                const id = result.insertId;
-
-                for (var i = 0; i < queryFiles.length; i++) {
-                    const file = queryFiles[i];
-                    sql = "INSERT INTO legal_files(filepath,file_type,owner,owner_type) VALUES('" + file['path'] + "','" + file['type'] + "','" + id + "','Query')";
-
-                    await connection.query(sql);
                 }
 
 
@@ -474,7 +471,7 @@ module.exports = {
                 return callback({ code: 500, error: err });
             }
 
-            var sql = "SELECT *,concat('" + config.PROFILE_URL + "',profile) as profile,'' as password FROM users WHERE id in (SELECT follower_id FROM followers WHERE user_id="+userId+")";
+            var sql = "SELECT *,(CASE WHEN profile IS NOT NULL AND profile!='' THEN concat('" + config.FILE_URL + "',profile) ELSE '' END) as profile,'' as password FROM users WHERE id in (SELECT follower_id FROM followers WHERE user_id="+userId+")";
 
             console.log(sql);
             connection.query(sql, function (err, followers) {
@@ -483,7 +480,7 @@ module.exports = {
                     return callback({ code: 500, error: err });
                 }
 
-                sql= "SELECT *,concat('" + config.PROFILE_URL + "',profile) as profile,'' as password FROM users WHERE id in (SELECT user_id FROM followers WHERE follower_id="+userId+")";
+                sql= "SELECT *,concat('" + config.FILE_URL + "',profile) as profile,'' as password FROM users WHERE id in (SELECT user_id FROM followers WHERE follower_id="+userId+")";
 
                 connection.query(sql,function(err,followings){
                     if (err) {
@@ -501,6 +498,31 @@ module.exports = {
                 })
 
                 
+            })
+        })
+    },
+
+
+    getMyQueries: (data, callback) => {
+        const userId = data.user_id;
+
+        db(function (err, connection) {
+            if (err) {
+                return callback({ code: 500, error: err });
+            }
+
+            var sql="";
+
+            sql = "SELECT queries.*,((SELECT COUNT(*) FROM votes WHERE query_id=queries.id and vote='Upvote') - (SELECT COUNT(*) FROM votes WHERE query_id=queries.id and vote='Downvote')) as vote_count,(SELECT COUNT(*) FROM queries_comments WHERE query_id=queries.id) as comment_count,COALESCE((select vote from votes where user_id="+userId+" and query_id=queries.id),'None') as vote_status,users.name,(CASE WHEN users.profile IS NOT NULL AND users.profile!='' THEN concat('" + config.FILE_URL + "',users.profile) ELSE '' END) as profile,(CASE WHEN queries.file IS NOT NULL AND queries.file!='' THEN concat('" + config.FILE_URL + "',queries.file) ELSE '' END) as file FROM queries LEFT JOIN users ON queries.author_id=users.id WHERE queries.is_active=1 AND queries.author_id="+userId+" order by queries.created_at desc";
+
+            connection.query(sql, function (err, results) {
+                if (err) {
+                    connection.release();
+                    return callback({ code: 500, error: err });
+                }
+
+                connection.release();
+                return callback(null, { code: 200, message: "Report submitted successfully" ,data:results});
             })
         })
     }

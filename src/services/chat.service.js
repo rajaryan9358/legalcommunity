@@ -17,7 +17,7 @@ module.exports = {
                 return callback({ code: 500, error: err });
             }
 
-            var sql = "SELECT users.name,concat('" + config.PROFILE_URL + "',users.profile) as profile FROM chats LEFT JOIN users ON chats.expert_id WHERE chats.user_id="+userId;
+            var sql = "SELECT users.name,(CASE WHEN users.profile IS NOT NULL AND users.profile!='' THEN concat('" + config.FILE_URL + "',users.profile) ELSE '' END) as profile FROM chats LEFT JOIN users ON chats.expert_id=users.id WHERE chats.user_id="+userId;
 
             connection.query(sql, function (err, messages) {
                 if (err) {
@@ -25,7 +25,7 @@ module.exports = {
                     return callback({ code: 500, error: err });
                 }
 
-                sql = "SELECT users.name,concat('" + config.PROFILE_URL + "',users.profile) as profile FROM chats LEFT JOIN users ON chats.user_id WHERE chats.expert_id="+userId;
+                sql = "SELECT users.name,(CASE WHEN users.profile IS NOT NULL AND users.profile!='' THEN concat('" + config.FILE_URL + "',users.profile) ELSE '' END) as profile FROM chats LEFT JOIN users ON chats.user_id=users.id WHERE chats.expert_id="+userId;
 
                 connection.query(sql,function(err,requests){
                     if (err) {
@@ -39,7 +39,7 @@ module.exports = {
                     }
 
                     connection.release();
-                    return callback(null, { code: 200, message: "Status updated successfully",data:resultData});
+                    return callback(null, { code: 200, message: "Chats fetched successfully",data:resultData});
                 })
             });
         });
@@ -54,15 +54,15 @@ module.exports = {
                 return callback({ code: 500, error: err });
             }
 
-            var sql = "INSERT INTO chats(user_id,expert_id,type,title,status) VALUES('" + userId + "','-1','Bot','" + title + "','Accepted')";
+            var sql = "INSERT INTO chats(user_id,expert_id,type,title,status,last_message,last_message_type) VALUES('" + userId + "','-1','Bot','" + title + "','Accepted','"+title+"','Text')";
 
-            connection.query(sql, function (err, results) {
+            connection.query(sql, function (err, result) {
                 if (err) {
                     connection.release();
                     return callback({ code: 500, error: err });
                 }
 
-                const id=results[0].id;
+                const id=result.insertId;
 
                 sql="SELECT * FROM chats WHERE id="+id;
 
@@ -93,13 +93,13 @@ module.exports = {
 
             var sql = "INSERT INTO messages(chat_id,message_type,message,is_read,sender_id) VALUES('" + chatId + "','"+messageType+"','"+message+"','0','"+userId+"')";
 
-            connection.query(sql, function (err, results) {
+            connection.query(sql, function (err, result) {
                 if (err) {
                     connection.release();
                     return callback({ code: 500, error: err });
                 }
 
-                const id=results[0].id;
+                const id=result.insertId;
 
                 sql="SELECT * FROM messages WHERE id="+id;
 
@@ -110,7 +110,7 @@ module.exports = {
                     }
 
                     connection.release();
-                    return callback(null, { code: 200, message: "Chat created successfully",data:results});
+                    return callback(null, { code: 200, message: "Message added successfully",data:results});
                 })
             });
         });
@@ -120,8 +120,6 @@ module.exports = {
     getMessages: (data, callback) => {
         const userId = data.user_id;
         const chatId=data.chat_id;
-        const messageType=data.message_type;
-        const message=data.message;
         
         
         db(function (err, connection) {
@@ -129,7 +127,7 @@ module.exports = {
                 return callback({ code: 500, error: err });
             }
 
-            var sql = "INSERT INTO messages(chat_id,message_type,message,is_read,sender_id) VALUES('" + chatId + "','"+messageType+"','"+message+"','0','"+userId+"')";
+            var sql = "SELECT * FROM messages WHERE chat_id="+chatId+" order by created_at asc";
 
             connection.query(sql, function (err, results) {
                 if (err) {
@@ -137,19 +135,8 @@ module.exports = {
                     return callback({ code: 500, error: err });
                 }
 
-                const id=results[0].id;
-
-                sql="SELECT * FROM messages WHERE id="+id;
-
-                connection.query(sql,function(err,results){
-                    if (err) {
-                        connection.release();
-                        return callback({ code: 500, error: err });
-                    }
-
-                    connection.release();
-                    return callback(null, { code: 200, message: "Chat created successfully",data:results});
-                })
+                connection.release();
+                    return callback(null, { code: 200, message: "Message fetched successfully",data:results});
             });
         });
     },

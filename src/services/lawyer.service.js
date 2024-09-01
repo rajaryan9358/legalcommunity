@@ -90,7 +90,7 @@ module.exports = {
                 return callback({ code: 500, error: err });
             }
 
-            sql = "SELECT * FROM libraries WHERE author_id="+userId+" and type='Case'";
+            sql = "SELECT libraries.*,users.name,(CASE WHEN users.profile IS NOT NULL AND users.profile!='' THEN concat('" + config.FILE_URL + "',users.profile) ELSE '' END) as profile FROM libraries LEFT JOIN users ON libraries.author_id=users.is WHERE libraries.author_id="+userId+" and libraries.type='Case'";
 
             connection.query(sql, function (err, results) {
                 if (err) {
